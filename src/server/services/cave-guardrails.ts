@@ -355,6 +355,14 @@ export function canExecuteDangerousTool(
   return assistantAskedForConfirmation(history);
 }
 
+function asSummaryText(value: unknown, fallback = "Catch up"): string {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : fallback;
+  }
+  return fallback;
+}
+
 export function buildConfirmationBlock(toolName: string, args: Record<string, unknown>) {
   const previewWhen = (() => {
     const start = args.startDateTime;
@@ -399,10 +407,7 @@ export function buildConfirmationBlock(toolName: string, args: Record<string, un
       const hasAttendees =
         Array.isArray(args.attendeeEmails) && args.attendeeEmails.length > 0;
       const subjectIdeas = hasAttendees
-        ? suggestMeetingEmailSubjects(
-            String(args.summary ?? "Catch up"),
-            previewWhen,
-          )
+        ? suggestMeetingEmailSubjects(asSummaryText(args.summary), previewWhen)
         : undefined;
       return {
         blocked: true,
@@ -424,7 +429,7 @@ export function buildConfirmationBlock(toolName: string, args: Record<string, un
     }
     case "schedule_meeting_and_notify": {
       const subjectIdeas = suggestMeetingEmailSubjects(
-        String(args.summary ?? "Catch up"),
+        asSummaryText(args.summary),
         previewWhen,
       );
       return {
@@ -466,9 +471,10 @@ export function buildButlrSystemPrompt(
   todayRange: string,
   sender: { name?: string | null; email?: string | null } = {},
 ) {
+  const trimmedName = sender.name?.trim();
   const senderName =
-    sender.name?.trim() ||
-    sender.email?.split("@")[0]?.replace(/[._-]/g, " ") ||
+    (trimmedName && trimmedName.length > 0 ? trimmedName : undefined) ??
+    sender.email?.split("@")[0]?.replace(/[._-]/g, " ") ??
     "the user";
   const senderEmail = sender.email ?? "not available";
 

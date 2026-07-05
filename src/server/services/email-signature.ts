@@ -36,9 +36,10 @@ export function finalizeEmailBody(body: string, sender: EmailSender) {
     text,
   );
   if (signoffMatch) {
-    const afterSignoff = text.slice(signoffMatch.index! + signoffMatch[0].length).trim();
+    const signoffIndex = signoffMatch.index ?? 0;
+    const afterSignoff = text.slice(signoffIndex + signoffMatch[0].length).trim();
     if (!afterSignoff || PLACEHOLDER_SIGNATURE.test(afterSignoff)) {
-      text = `${text.slice(0, signoffMatch.index)}${signoffMatch[1]}${senderName}`;
+      text = `${text.slice(0, signoffIndex)}${signoffMatch[1]}${senderName}`;
     }
   } else if (!text.includes(senderName)) {
     text = `${text}\n\nBest,\n${senderName}`;

@@ -54,9 +54,11 @@ export function buildMeetingNotifyBody(
   when: string,
   sender?: EmailSender,
 ) {
+  const trimmedBody = notifyBody?.trim();
   const base =
-    notifyBody?.trim() ||
-    `Hi,\n\nI've scheduled "${summary}" for ${when}.\n\nLooking forward to it!`;
+    trimmedBody && trimmedBody.length > 0
+      ? trimmedBody
+      : `Hi,\n\nI've scheduled "${summary}" for ${when}.\n\nLooking forward to it!`;
 
   const signed = sender ? finalizeEmailBody(base, sender) : base;
 
@@ -115,9 +117,11 @@ export async function scheduleMeetingAndNotify(
     );
   }
 
+  const trimmedSubject = args.notifySubject?.trim();
   const subject =
-    args.notifySubject?.trim() ||
-    suggestMeetingEmailSubjects(args.summary, when)[0]!;
+    trimmedSubject && trimmedSubject.length > 0
+      ? trimmedSubject
+      : suggestMeetingEmailSubjects(args.summary, when)[0]!;
   const body = buildMeetingNotifyBody(
     args.notifyBody,
     meetLink,
