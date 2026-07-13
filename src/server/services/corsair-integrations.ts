@@ -35,22 +35,31 @@ async function verifyPluginAuthentication(
   tenantId: string,
   pluginId: IntegrationPluginId,
 ): Promise<boolean> {
-  const tenant = corsair.withTenant(tenantId);
+  try {
+    const tenant = corsair.withTenant(tenantId);
 
-  if (pluginId === "gmail") {
-    const accessToken = await tenant.gmail.keys.get_access_token();
-    const refreshToken = await tenant.gmail.keys.get_refresh_token();
-    return Boolean(accessToken && refreshToken);
+    if (pluginId === "gmail") {
+      const accessToken = await tenant.gmail.keys.get_access_token();
+      const refreshToken = await tenant.gmail.keys.get_refresh_token();
+      return Boolean(accessToken && refreshToken);
+    }
+
+    if (pluginId === "googlecalendar") {
+      const accessToken = await tenant.googlecalendar.keys.get_access_token();
+      const refreshToken = await tenant.googlecalendar.keys.get_refresh_token();
+      return Boolean(accessToken && refreshToken);
+    }
+
+    const apiKey = await tenant.github.keys.get_api_key();
+    return Boolean(apiKey);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    // Corsair throws until setupCorsair creates the plugin shell.
+    if (message.includes("not found")) {
+      return false;
+    }
+    throw error;
   }
-
-  if (pluginId === "googlecalendar") {
-    const accessToken = await tenant.googlecalendar.keys.get_access_token();
-    const refreshToken = await tenant.googlecalendar.keys.get_refresh_token();
-    return Boolean(accessToken && refreshToken);
-  }
-
-  const apiKey = await tenant.github.keys.get_api_key();
-  return Boolean(apiKey);
 }
 
 function mapIntegrationStatus(
@@ -113,6 +122,9 @@ function parsePluginConnectionState(
 }
 
 export async function getTenantIntegrationStatuses(tenantId: string) {
+  // Ensure Corsair plugin shells exist before reading keys / connection status.
+  await ensureCorsairCredentials(tenantId);
+
   const raw = await getTenantConnectionStatus(tenantId);
   const plugins: IntegrationPluginId[] = ["gmail", "googlecalendar", "github"];
 
@@ -148,8 +160,9 @@ async function ensureIntegrationOAuthCredentials() {
 }
 
 export async function ensureCorsairCredentials(tenantId: string) {
-  await ensureIntegrationOAuthCredentials();
+  // Corsair requires plugin rows in corsair_integrations before keys.* can be set.
   await setupCorsair(corsair, { tenantId });
+  await ensureIntegrationOAuthCredentials();
 }
 
 export async function getTenantConnectionStatus(tenantId: string) {

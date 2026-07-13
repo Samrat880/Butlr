@@ -152,6 +152,20 @@ export function BatcaveIntegrations() {
               </div>
             ))}
           </>
+        ) : status.isError ? (
+          <div className="butlr-glass flex flex-col gap-3 p-5">
+            <p className="text-sm text-[var(--butlr-rose)]">
+              Couldn't load integrations
+              {status.error.message ? `: ${status.error.message}` : "."}
+            </p>
+            <button
+              type="button"
+              className="butlr-btn-primary w-fit text-sm"
+              onClick={() => void status.refetch()}
+            >
+              Try again
+            </button>
+          </div>
         ) : (
           Object.entries(status.data ?? {}).map(([pluginId, integration]) => {
             const meta = PLUGIN_META[pluginId] ?? {
